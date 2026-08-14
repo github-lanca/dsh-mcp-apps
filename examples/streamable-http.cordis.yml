@@ -1,0 +1,9 @@
+- insert:
+    - id: mcp-apps-example
+      name: '@sugarforever/dsh-mcp-apps'
+      config:
+        serverName: example
+        transport: streamable-http
+        url: http://127.0.0.1:3000/mcp
+        headers: {}
+        failOnStartupError: true
