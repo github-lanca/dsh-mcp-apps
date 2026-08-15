@@ -44,6 +44,9 @@
     "test:watch": "vitest"
   },
   "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
   "dependencies": {
     "@deepseek-ai/schemastery": "^3.18.1",
     "@modelcontextprotocol/ext-apps": "^1.7.5",

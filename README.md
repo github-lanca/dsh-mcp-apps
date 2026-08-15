@@ -18,19 +18,70 @@ The Host half connects to one MCP Server, registers its model-visible tools on `
 
 Plain MCP tools remain plain Harness tools. An MCP Server does not need to provide a UI for every tool.
 
-## Install
+## Install DeepSeek Harness
 
-Until the package is published, install it from this checkout in the configuration project that resolves your Harness plugins:
-
-```sh
-npm install /absolute/path/to/dsh-mcp-apps
-```
-
-After publication:
+DeepSeek Harness currently requires Node.js `^22.19.0` or `>=24.0.0`. Its profile plugin manager also invokes `pnpm`; install the version used by the current DSH release:
 
 ```sh
-npm install @sugarforever/dsh-mcp-apps
+npm install --global pnpm@11.7.0
 ```
+
+Then start the Web profile without a global DSH installation:
+
+```sh
+npx @deepseek-ai/dsh web
+```
+
+The Web UI is served at <http://127.0.0.1:3080> by default. The first run initializes the `web` profile under `~/.dsh/profiles/web` (or `$DSH_HOME/profiles/web` when `DSH_HOME` is set).
+
+## Install the plugin
+
+Install the published package into the DSH Web profile:
+
+```sh
+npx @deepseek-ai/dsh plugin --profile web add @sugarforever/dsh-mcp-apps
+```
+
+For local development, install this checkout instead:
+
+```sh
+npx @deepseek-ai/dsh plugin --profile web add /absolute/path/to/dsh-mcp-apps
+```
+
+You can also install a tarball downloaded from a GitHub Release:
+
+```sh
+npx @deepseek-ai/dsh plugin --profile web add ./sugarforever-dsh-mcp-apps-0.1.0.tgz
+```
+
+This package is a configurable Cordis plugin rather than a DSH bundle with a fixed server instance. `dsh plugin add` installs the package dependency; the next step mounts an instance in the profile patch.
+
+Create or edit `~/.dsh/profiles/web/cordis.patch.yml`:
+
+```yaml
+- insert:
+    - id: mcp-apps-vibefun
+      name: '@sugarforever/dsh-mcp-apps'
+      config:
+        serverName: vibefun
+        transport: streamable-http
+        url: https://vibefun.app/api/mcp
+        failOnStartupError: true
+```
+
+Start or restart DSH and open <http://127.0.0.1:3080>:
+
+```sh
+npx @deepseek-ai/dsh web
+```
+
+To remove the package dependency:
+
+```sh
+npx @deepseek-ai/dsh plugin --profile web remove @sugarforever/dsh-mcp-apps
+```
+
+Remove its `insert` entry from `cordis.patch.yml` as well.
 
 ## Configure a stdio Server
 
@@ -83,6 +134,56 @@ npm run build
 ```
 
 The integration test starts a real stdio MCP Apps Server and verifies discovery, tool execution, structured output, resource reading, and teardown.
+
+## Publish
+
+The repository includes `.github/workflows/publish.yml`. Publishing a GitHub Release runs the complete release gate, creates an npm tarball, uploads it as a workflow artifact and GitHub Release asset, and publishes the same tarball to npm. Reruns are safe: when that exact npm version already exists, the workflow skips the immutable npm publication and still completes the GitHub artifacts.
+
+The workflow uses npm Trusted Publishing with GitHub OIDC, so it does not require an `NPM_TOKEN` secret.
+
+### One-time npm setup
+
+1. If `@sugarforever/dsh-mcp-apps` does not exist on npm yet, publish the first version locally:
+
+   ```sh
+   npm login
+   npm ci
+   npm test
+   npm run typecheck
+   npm run build
+   npm pack --dry-run
+   npm publish --access public
+   ```
+
+2. On npmjs.com, open the package's **Settings → Trusted Publisher**, choose **GitHub Actions**, and configure:
+
+   - Organization or user: `sugarforever`
+   - Repository: `dsh-mcp-apps`
+   - Workflow filename: `publish.yml`
+   - Allowed action: `npm publish`
+
+3. Do not add an environment name unless the workflow is also updated to use that exact GitHub environment.
+
+### Release a new version
+
+Update and commit the package version, then push the matching tag:
+
+```sh
+npm version patch
+git push origin main --follow-tags
+```
+
+Create and publish a GitHub Release for that tag. For example, package version `0.1.1` must use tag `v0.1.1`. Publishing the Release triggers the workflow; a mismatched tag fails before npm publication.
+
+Before creating a Release, the same checks can be run locally:
+
+```sh
+npm ci
+npm test
+npm run typecheck
+npm run build
+npm pack --dry-run
+```
 
 ## Architecture
 
