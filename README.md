@@ -51,12 +51,12 @@ npx @deepseek-ai/dsh plugin --profile web add /absolute/path/to/dsh-mcp-apps
 You can also install a tarball downloaded from a GitHub Release:
 
 ```sh
-npx @deepseek-ai/dsh plugin --profile web add ./sugarforever-dsh-mcp-apps-0.1.0.tgz
+npx @deepseek-ai/dsh plugin --profile web add ./sugarforever-dsh-mcp-apps-0.1.2.tgz
 ```
 
-This package is a configurable Cordis plugin rather than a DSH bundle with a fixed server instance. `dsh plugin add` installs the package dependency; the next step mounts an instance in the profile patch.
+The package is a DSH bundle. Installing it also applies its bundled `cordis.patch.yml`, which mounts the public VibeFun MCP Apps server at `https://vibefun.app/api/mcp` by default.
 
-Create or edit `~/.dsh/profiles/web/cordis.patch.yml`:
+To connect a different server, edit the installed profile patch at `~/.dsh/profiles/web/cordis.patch.yml` and replace the generated instance configuration. The relevant entry is:
 
 ```yaml
 - insert:
@@ -81,7 +81,7 @@ To remove the package dependency:
 npx @deepseek-ai/dsh plugin --profile web remove @sugarforever/dsh-mcp-apps
 ```
 
-Remove its `insert` entry from `cordis.patch.yml` as well.
+The plugin manager also removes the bundle patch contributed by the package.
 
 ## Configure a stdio Server
 

@@ -1,0 +1,8 @@
+- insert:
+    - id: mcp-apps-vibefun
+      name: '@sugarforever/dsh-mcp-apps'
+      config:
+        serverName: vibefun
+        transport: streamable-http
+        url: https://vibefun.app/api/mcp
+        failOnStartupError: true

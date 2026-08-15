@@ -1,6 +1,6 @@
 {
   "name": "@sugarforever/dsh-mcp-apps",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "MCP Apps host plugin for DeepSeek Harness",
   "repository": {
     "type": "git",
@@ -21,6 +21,9 @@
     "./package.json": "./package.json"
   },
   "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
     "client": {
       "inject": [
         "@deepseek-ai/dsh-client-connection",
@@ -34,6 +37,7 @@
     "lib/client.js",
     "lib/types/**/*.d.ts",
     "lib/types/**/*.d.ts.map",
+    "cordis.patch.yml",
     "README.md",
     "LICENSE"
   ],

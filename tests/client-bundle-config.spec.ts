@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { readFileSync } from 'node:fs'
 import manifest from '../package.json'
 import { clientBundleConfig } from '../tsdown.config.ts'
 
@@ -25,5 +26,14 @@ describe('DSH web client bundle', () => {
     expect(manifest.exports['.'].types).toBe('./lib/types/index.d.ts')
     expect(manifest.exports['./client'].types).toBe('./lib/types/client/index.d.ts')
     expect(manifest.files).toContain('lib/types/**/*.d.ts')
+  })
+
+  it('ships a DSH bundle that mounts the default VibeFun MCP Apps server', () => {
+    expect(manifest.dsh.bundle).toEqual({ patch: './cordis.patch.yml' })
+    expect(manifest.files).toContain('cordis.patch.yml')
+
+    const patch = readFileSync(new URL('../cordis.patch.yml', import.meta.url), 'utf8')
+    expect(patch).toContain("name: '@sugarforever/dsh-mcp-apps'")
+    expect(patch).toContain('url: https://vibefun.app/api/mcp')
   })
 })
