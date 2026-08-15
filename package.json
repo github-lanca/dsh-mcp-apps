@@ -1,6 +1,6 @@
 {
   "name": "@sugarforever/dsh-mcp-apps",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "MCP Apps host plugin for DeepSeek Harness",
   "repository": {
     "type": "git",
