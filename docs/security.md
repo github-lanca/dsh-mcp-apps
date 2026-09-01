@@ -13,8 +13,8 @@
 - Resource CSP defaults to no network, no nested frames, no base URI, and no form submission. Declared domains selectively widen the matching directive.
 - Browser permissions are granted only when requested in MCP resource metadata.
 - App tool calls are restricted to tools advertised by the same Server with App visibility.
-- RPC payloads are schema-validated and the channel accepts loopback authorities only.
-- MCP URL, process command, headers, environment, and credentials remain Host-only.
+- RPC payloads are schema-validated and the channel is registered through Connection's loopback-scoped surface.
+- The settings page can edit, add, and remove MCP servers, but `headers`/`env` are declared `role('secret')`: their values never ride a wire read (redaction), and the browser sees a write-only input. The stdio process command stays Host-only. The Host re-merges the composition layer's `headers`/`env` by `serverName`, so editing a server does not silently drop its auth.
 - The durable result metadata contains App identity and the Server-returned JSON result, never connection configuration.
 
 ## Deliberately unsupported

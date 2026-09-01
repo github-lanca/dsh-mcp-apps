@@ -39,6 +39,7 @@ export function resolveSettledAppCall(block: ToolCallBlock, tool: UiToolRegistra
     arguments: args as Record<string, unknown>,
     result,
     resourceUri: tool.resourceUri,
+    serverName: tool.serverName,
   }
 }
 
@@ -55,7 +56,7 @@ export function McpAppToolView({ tool, block, connection }: McpAppToolViewProps)
     void connection.rpc.call(
       '/mcp-apps',
       'resources/read',
-      { uri: call.resourceUri },
+      { serverName: call.serverName, uri: call.resourceUri },
       controller.signal,
     ).then((result) => {
       if (!result.ok) throw new Error(result.error.message)
@@ -87,20 +88,20 @@ export function McpAppToolView({ tool, block, connection }: McpAppToolViewProps)
   }, [call, connection, resource])
 
   if (call === null) {
-    return <div style={CARD_STYLE} data-mcp-app-tool={tool.rawName}>Waiting for MCP App result…</div>
+    return <div style={CARD_STYLE} data-mcp-app-tool={tool.rawName}>正在等待 MCP 应用结果…</div>
   }
   if (error !== null) {
     return <div style={{ ...CARD_STYLE, padding: 12, color: '#b42318' }} role="alert">{error}</div>
   }
   if (resource === null) {
-    return <div style={CARD_STYLE} data-mcp-app-tool={tool.rawName}>Loading MCP App…</div>
+    return <div style={CARD_STYLE} data-mcp-app-tool={tool.rawName}>正在加载 MCP 应用…</div>
   }
 
   return <div style={CARD_STYLE} data-mcp-app-tool={tool.rawName}>
     <div style={TITLE_STYLE}>{tool.rawName}</div>
     <iframe
       ref={iframeRef}
-      title={`${tool.rawName} MCP App`}
+      title={`${tool.rawName} · MCP 应用`}
       sandbox="allow-scripts allow-forms allow-downloads"
       allow={buildAllowAttribute(resource.permissions as never) || undefined}
       srcDoc={withContentSecurityPolicy(resource.html, resource.csp)}
@@ -132,9 +133,9 @@ function parseCallToolResult(value: unknown): SettledAppCall['result'] | null {
 }
 
 function parseResource(value: unknown, uri: string): AppResource {
-  if (typeof value !== 'object' || value === null || Array.isArray(value)) throw new Error('Invalid MCP App resource response')
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) throw new Error('MCP 应用资源响应无效')
   const resource = value as Record<string, unknown>
-  if (resource.uri !== uri || typeof resource.html !== 'string') throw new Error('Invalid MCP App resource response')
+  if (resource.uri !== uri || typeof resource.html !== 'string') throw new Error('MCP 应用资源响应无效')
   return resource as unknown as AppResource
 }
 

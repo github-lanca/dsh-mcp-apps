@@ -2,12 +2,12 @@ import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { StdioClientTransport, getDefaultEnvironment } from '@modelcontextprotocol/sdk/client/stdio.js'
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js'
 import { RESOURCE_MIME_TYPE } from '@modelcontextprotocol/ext-apps/app-bridge'
-import type { Config } from './config.ts'
+import type { McpServerConfig } from './config.ts'
 import type { ConnectedMcpClient } from './index.ts'
 
 const IMPLEMENTATION = { name: '@sugarforever/dsh-mcp-apps', version: '0.1.0' }
 
-export async function createMcpClient(config: Config): Promise<ConnectedMcpClient> {
+export async function createMcpClient(config: McpServerConfig): Promise<ConnectedMcpClient> {
   const client = new Client(IMPLEMENTATION, {
     capabilities: {
       extensions: {
@@ -17,6 +17,13 @@ export async function createMcpClient(config: Config): Promise<ConnectedMcpClien
       },
     },
   })
+  if (config.transport === 'stdio' && config.command === '') {
+    throw new Error(`mcp-apps(${config.serverName}): stdio transport requires a command`)
+  }
+  if (config.transport === 'streamable-http' && config.url === '') {
+    throw new Error(`mcp-apps(${config.serverName}): streamable-http transport requires a url`)
+  }
+
   const transport = config.transport === 'stdio'
     ? new StdioClientTransport({
         command: config.command,

@@ -26,11 +26,29 @@ class ConnectionService extends Service {
   }
 }
 
-const config: Config = {
-  transport: 'streamable-http',
+class SettingsService extends Service {
+  register = vi.fn((_ns: string, _schema: unknown, options?: { base?: { servers: unknown[] } }) => ({
+    get: () => ({ servers: options?.base?.servers ?? [] }),
+  }))
+
+  constructor(ctx: Context) {
+    super(ctx, 'settings')
+  }
+}
+
+const server = {
   serverName: 'vibefun',
+  transport: 'streamable-http' as const,
   url: 'https://example.com/mcp',
+  command: '',
+  args: [],
+  cwd: '',
   headers: {},
+  env: {},
+}
+
+const config: Config = {
+  servers: [server],
   toolCallTimeoutMs: 60_000,
   failOnStartupError: true,
 }
@@ -61,18 +79,19 @@ describe('Cordis MCP Apps plugin lifecycle', () => {
     const ctx = new Context()
     const tools = new ToolsService(ctx)
     const connection = new ConnectionService(ctx)
+    new SettingsService(ctx)
     const close = vi.fn()
     const factory = vi.fn().mockResolvedValue(connected(close))
 
     const fiber = ctx.plugin({
-      inject: ['tools', 'connection'],
+      inject: ['tools', 'connection', 'settings'],
       apply: pluginCtx => applyWithClientFactory(pluginCtx, config, factory),
     })
     await fiber.await()
 
-    expect(factory).toHaveBeenCalledWith(config)
+    expect(factory).toHaveBeenCalledWith(server)
     expect([...tools.definitions.keys()]).toEqual(['mcp__vibefun__chart'])
-    expect(connection.handle).toHaveBeenCalledWith('/mcp-apps', expect.any(Function), { authority: 'loopback' })
+    expect(connection.handle).toHaveBeenCalledWith('/mcp-apps', expect.any(Function))
 
     await fiber.dispose()
     expect(tools.definitions.size).toBe(0)
@@ -83,10 +102,11 @@ describe('Cordis MCP Apps plugin lifecycle', () => {
     const ctx = new Context()
     new ToolsService(ctx)
     new ConnectionService(ctx)
+    new SettingsService(ctx)
     const factory = vi.fn().mockRejectedValue(new Error('offline'))
 
     const fiber = ctx.plugin({
-      inject: ['tools', 'connection'],
+      inject: ['tools', 'connection', 'settings'],
       apply: pluginCtx => applyWithClientFactory(pluginCtx, config, factory),
     })
 
@@ -97,11 +117,12 @@ describe('Cordis MCP Apps plugin lifecycle', () => {
     const ctx = new Context()
     const tools = new ToolsService(ctx)
     new ConnectionService(ctx)
+    new SettingsService(ctx)
     const factory = vi.fn().mockRejectedValue(new Error('offline'))
     const loggerError = vi.spyOn(ctx.logger, 'error').mockImplementation(() => undefined)
 
     const fiber = ctx.plugin({
-      inject: ['tools', 'connection'],
+      inject: ['tools', 'connection', 'settings'],
       apply: pluginCtx => applyWithClientFactory(pluginCtx, { ...config, failOnStartupError: false }, factory),
     })
     await fiber.await()

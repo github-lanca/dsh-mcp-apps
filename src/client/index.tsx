@@ -1,20 +1,24 @@
-import type { ClientContext } from '@deepseek-ai/dsh-client-runtime/client'
-import type { ConnectionHandle } from '@deepseek-ai/dsh-client-connection/client'
+import { type Context } from '@deepseek-ai/cordis'
 import type {} from '@deepseek-ai/dsh-client-ui-tool/client'
+import type {} from '@deepseek-ai/dsh-client-ui-settings/client'
+import type { ConnectionHandle } from '@deepseek-ai/dsh-client-connection/client'
+import type { McpServerConfig } from '../config.ts'
 import { McpAppToolView } from './McpAppToolView.tsx'
+import { McpAppsSettingsController, McpAppsSettingsSection } from './McpAppsSettingsSection.tsx'
 
-export const inject = ['connection', 'slots']
+export const inject = ['connection', 'slots', 'settingsScope']
 
 interface UiToolRegistration {
+  serverName: string
   publicName: string
   rawName: string
   resourceUri: string
 }
 
-export async function apply(ctx: ClientContext): Promise<void> {
-  // Host and browser declarations both merge `ctx.connection` in one source
-  // package, while the two bundles execute on separate platforms.
+export async function apply(ctx: Context): Promise<void> {
+  // Host 与浏览器各自声明 `ctx.connection`，两者在不同平台执行，因此做一次类型收敛。
   const connection = (ctx as unknown as { connection: ConnectionHandle }).connection
+
   const result = await connection.rpc.call('/mcp-apps', 'tools/list-ui', null)
   if (!result.ok) throw new Error(result.error.message)
   if (!Array.isArray(result.value)) throw new Error('mcp-apps: Host returned an invalid UI tool list')
@@ -25,6 +29,21 @@ export async function apply(ctx: ClientContext): Promise<void> {
       props => <McpAppToolView {...props} tool={tool} connection={connection} />,
     )), `mcp-apps: ${tool.publicName} view`)
   }
+
+  // 设置页独立“MCP Apps”段：绑定设置命名空间，提供可编辑/新增/删除服务器 + 保存 + 连接测试。
+  const scope = ctx.settingsScope.bind<{ servers: McpServerConfig[] }>({ namespace: 'mcp-apps' })
+  const controller = new McpAppsSettingsController(scope, async (server) => {
+    const result = await connection.rpc.call('/mcp-apps', 'test', server)
+    if (!result.ok) return { reachable: false, detail: result.error.message }
+    return result.value as { reachable: boolean; detail?: string }
+  })
+  ctx.effect(
+    () => ctx.slots.inject('settings.section', () => ctx.slots.register(
+      { name: 'settings.section', id: 'mcp-apps', order: 20, label: () => 'MCP 服务器', inject: () => controller.face() },
+      McpAppsSettingsSection,
+    )),
+    'mcp-apps: settings section',
+  )
 }
 
 function parseUiTool(value: unknown): UiToolRegistration {
@@ -33,7 +52,8 @@ function parseUiTool(value: unknown): UiToolRegistration {
   }
   const item = value as Record<string, unknown>
   if (
-    typeof item.publicName !== 'string'
+    typeof item.serverName !== 'string'
+    || typeof item.publicName !== 'string'
     || typeof item.rawName !== 'string'
     || typeof item.resourceUri !== 'string'
     || !item.resourceUri.startsWith('ui://')
@@ -41,6 +61,7 @@ function parseUiTool(value: unknown): UiToolRegistration {
     throw new Error('mcp-apps: invalid UI tool registration')
   }
   return {
+    serverName: item.serverName,
     publicName: item.publicName,
     rawName: item.rawName,
     resourceUri: item.resourceUri,

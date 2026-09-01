@@ -14,6 +14,7 @@ The Host half connects to one MCP Server, registers its model-visible tools on `
 - Original `CallToolResult` delivery to the View, including `structuredContent`
 - View-to-Server `tools/call`, `resources/list`, and `resources/read`
 - Resource CSP metadata and iframe Permission Policy requests
+- Read-only connection summaries in the settings page (name, transport, remote endpoint)
 - Cordis lifecycle disposal for tools, connections, RPC routes, Slots, and App bridges
 
 Plain MCP tools remain plain Harness tools. An MCP Server does not need to provide a UI for every tool.
@@ -56,16 +57,17 @@ npx @deepseek-ai/dsh plugin --profile web add ./sugarforever-dsh-mcp-apps-0.1.2.
 
 The package is a DSH bundle. Installing it also applies its bundled `cordis.patch.yml`, which mounts the public VibeFun MCP Apps server at `https://vibefun.app/api/mcp` by default.
 
-To connect a different server, edit the installed profile patch at `~/.dsh/profiles/web/cordis.patch.yml` and replace the generated instance configuration. The relevant entry is:
+The plugin is a manager: it reads the `mcp-apps` settings namespace and connects to each listed server at startup. The bundled patch only supplies the composition default; from the settings page you can add, edit, and delete servers. The relevant entry is:
 
 ```yaml
 - insert:
-    - id: mcp-apps-vibefun
+    - id: mcp-apps
       name: '@sugarforever/dsh-mcp-apps'
       config:
-        serverName: vibefun
-        transport: streamable-http
-        url: https://vibefun.app/api/mcp
+        servers:
+          - serverName: vibefun
+            transport: streamable-http
+            url: https://vibefun.app/api/mcp
         failOnStartupError: true
 ```
 
@@ -92,12 +94,13 @@ Create `mcp-apps.cordis.yml`:
     - id: mcp-apps-vibefun
       name: '@sugarforever/dsh-mcp-apps'
       config:
-        serverName: vibefun
-        transport: stdio
-        command: node
-        args: ['/absolute/path/to/your-mcp-server.js']
-        env:
-          VIBEFUN_API_KEY: !!js process.env.VIBEFUN_API_KEY
+        servers:
+          - serverName: vibefun
+            transport: stdio
+            command: node
+            args: ['/absolute/path/to/your-mcp-server.js']
+            env:
+              VIBEFUN_API_KEY: !!js process.env.VIBEFUN_API_KEY
         failOnStartupError: true
 ```
 
@@ -114,15 +117,16 @@ dsh web --patch "$PWD/mcp-apps.cordis.yml"
     - id: mcp-apps-vibefun
       name: '@sugarforever/dsh-mcp-apps'
       config:
-        serverName: vibefun
-        transport: streamable-http
-        url: http://127.0.0.1:3000/mcp
-        headers:
-          Authorization: !!js '`Bearer ${process.env.VIBEFUN_MCP_TOKEN}`'
+        servers:
+          - serverName: vibefun
+            transport: streamable-http
+            url: http://127.0.0.1:3000/mcp
+            headers:
+              Authorization: !!js '`Bearer ${process.env.VIBEFUN_MCP_TOKEN}`'
         failOnStartupError: true
 ```
 
-The browser never receives the URL, command, headers, environment, or credentials. Its package-private RPC channel is loopback-only.
+The `mcp-apps` settings page is a dedicated menu: it lets you edit, add, and remove MCP servers. Changes are written to the settings document and take effect when the plugin reconnects at the next startup — so the page shows a "restart required" reminder after a save. The browser never receives headers, environment, or credentials values: those are marked `role('secret')` and stay Host-only. The Host merges back the composition-layer `headers`/`env` by `serverName`, so editing a server in the UI does not silently drop its auth.
 
 ## Develop
 

@@ -2,9 +2,10 @@
     - id: mcp-apps-example
       name: '@sugarforever/dsh-mcp-apps'
       config:
-        serverName: example
-        transport: stdio
-        command: node
-        args: ['/absolute/path/to/mcp-app-server.js']
-        env: {}
+        servers:
+          - serverName: example
+            transport: stdio
+            command: node
+            args: ['/absolute/path/to/mcp-app-server.js']
+            env: {}
         failOnStartupError: true

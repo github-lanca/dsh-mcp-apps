@@ -6,6 +6,7 @@ import { McpAppToolView, resolveSettledAppCall } from '../src/client/McpAppToolV
 afterEach(cleanup)
 
 const tool = {
+  serverName: 'vibefun',
   publicName: 'mcp__vibefun__chart',
   rawName: 'chart',
   resourceUri: 'ui://vibefun/chart',
@@ -39,6 +40,7 @@ describe('MCP App tool view', () => {
       arguments: { topic: 'MCP' },
       result: { content: [{ type: 'text', text: 'done' }] },
       resourceUri: 'ui://vibefun/chart',
+      serverName: 'vibefun',
     })
     expect(resolveSettledAppCall({ ...settled, meta: undefined }, tool)).toBeNull()
     expect(resolveSettledAppCall({ ...settled, call: { ...settled.call!, argsRaw: 'not json' } }, tool)).toBeNull()
@@ -64,11 +66,11 @@ describe('MCP App tool view', () => {
       openFile={() => undefined}
     />)
 
-    expect(screen.getByText('Loading MCP App…')).toBeTruthy()
+    expect(screen.getByText('正在加载 MCP 应用…')).toBeTruthy()
     await waitFor(() => expect(call).toHaveBeenCalledWith(
       '/mcp-apps',
       'resources/read',
-      { uri: 'ui://vibefun/chart' },
+      { serverName: 'vibefun', uri: 'ui://vibefun/chart' },
       expect.any(AbortSignal),
     ))
     const iframe = await waitFor(() => container.querySelector('iframe'))

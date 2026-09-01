@@ -4,3 +4,8 @@ lib/
 *.tgz
 .env
 .DS_Store
+
+.idea
+
+# DeepSeek Harness 本地配置
+.dsh-scope.json
